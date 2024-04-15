@@ -1,0 +1,6 @@
+- mkdir tg-bot-quiz-js-grammy-ts
+- cd tg-bot-quiz-js-grammy-ts
+- code .
+- yarn init -y
+- tsc --init
+- git init
