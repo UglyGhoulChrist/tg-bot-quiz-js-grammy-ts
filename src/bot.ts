@@ -4,9 +4,6 @@ config()
 
 import { loadState, saveState } from './state-users'
 
-// Инициализируем состояние
-let state: IStateUsers = loadState();
-
 // Подключение библиотеки `grammy`, для создания Telegram-ботов на Node.js
 import { Api, Bot, BotError, CommandContext, Context, GrammyError, HearsContext, HttpError, RawApi } from 'grammy'
 // Подключение команд
@@ -54,6 +51,7 @@ bot.hears(['Вариант 1', 'Вариант 2', 'Вариант 3', 'Вари
 
     if (ctx.from?.id) {
         const userId = ctx.from.id;
+        const state: IStateUsers = await loadState()
         // Обновляем состояние для пользователя
         if (!state[userId]) {
             // Начальное состояние
@@ -99,9 +97,9 @@ bot.command('question', async (ctx: CommandContext<Context>) => {
 bot.command('progress', async (ctx: CommandContext<Context>) => {
     if (ctx.from?.id) {
         const userId: number = ctx.from.id;
-        const stateUser: IStateUsers = loadState()
-        if (stateUser[userId]) {
-            await ctx.reply(`Вы ответили правильно на ${stateUser[userId].correctAnswer} из ${stateUser[userId].countQuiz} вопросов викторины!`)
+        const state: IStateUsers = await loadState()
+        if (state[userId]) {
+            await ctx.reply(`Вы ответили правильно на ${state[userId].correctAnswer} из ${state[userId].countQuiz} вопросов викторины!`)
         } else {
             await ctx.reply('Вы ещё не ответили ни на один вопрос викторины!')
         }

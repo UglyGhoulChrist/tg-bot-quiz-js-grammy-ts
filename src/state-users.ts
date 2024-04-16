@@ -1,30 +1,34 @@
-import fs from 'node:fs';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import { IStateUsers } from './state-users.interface';
 
 const ENCODING = 'utf8';
 
+// Получаю путь к файлу состояний
+function getStateFilePath(): string {
+    const statePath: string = process.env.STATE_PATH || 'path_to_default_state_dir';
+    const stateFile: string = process.env.STATE_FILE || 'default-state-users.json';
+    return path.join(statePath, stateFile);
+}
+
 // Проверяю наличие файла и создаю его, если он отсутствует
-function ensureFileExists(filePath: string) {
-    if (!fs.existsSync(filePath)) {
-        const dir = path.dirname(filePath);
-        if (!fs.existsSync(dir)) {
-            fs.mkdirSync(dir, { recursive: true });
-        }
-        fs.writeFileSync(filePath, '{}', ENCODING);
+async function ensureFileExists(filePath: string): Promise<void> {
+    try {
+        await fs.access(filePath);
+    } catch {
+        const dir: string = path.dirname(filePath);
+        await fs.mkdir(dir, { recursive: true });
+        await fs.writeFile(filePath, '{}', ENCODING);
     }
 }
 
 // Загружаю состояние из файла
-export function loadState(): IStateUsers {
-    // Получаю путь к файлу состояний из .env
-    const filePath = path.join(process.env.STATE_PATH as string, process.env.STATE_FILE as string)
-    // Убеждаюсь, что файл существует
-    ensureFileExists(filePath);
+export async function loadState(): Promise<IStateUsers> {
+    const filePath: string = getStateFilePath();
+    await ensureFileExists(filePath);
     try {
-        const data: string = fs.readFileSync(filePath, ENCODING);
-        const stateUsers: IStateUsers = JSON.parse(data)
-        return stateUsers;
+        const data: string = await fs.readFile(filePath, ENCODING);
+        return JSON.parse(data);
     } catch (error) {
         // Типизирую error как NodeJS.ErrnoException
         const err: NodeJS.ErrnoException = error as NodeJS.ErrnoException;
@@ -35,13 +39,11 @@ export function loadState(): IStateUsers {
 }
 
 // Сохраняю состояние в файл
-export function saveState(state: IStateUsers): void {
-    // Получаю путь к файлу состояний из .env
-    const filePath = path.join(process.env.STATE_PATH as string, process.env.STATE_FILE as string)
-    // Убеждаюсь, что файл существует
-    ensureFileExists(filePath);
+export async function saveState(state: IStateUsers): Promise<void> {
+    const filePath: string = getStateFilePath();
+    await ensureFileExists(filePath);
     try {
-        fs.writeFileSync(filePath, JSON.stringify(state, null, 2), ENCODING);
+        await fs.writeFile(filePath, JSON.stringify(state, null, 2), ENCODING);
     } catch (error) {
         // Если возникла ошибка при сохранении, сообщаю об этом
         // Типизирую error как NodeJS.ErrnoException
