@@ -1,19 +1,32 @@
 {
   "name": "tg-bot-quiz-js-grammy-ts",
   "version": "1.0.0",
-  "main": "bot.js",
+  "main": "bundle.js",
   "license": "MIT",
+  "type": "module",
   "scripts": {
-    "dev": "tsc-watch --onSuccess \"node ./dist/bot.js\"",
-    "start": "./dist/bot.js"
+    "build": "rollup -c",
+    "watch": "rollup -c -w",
+    "start": "nodemon dist/bundle.js",
+    "dev": "concurrently \"npm run watch\" \"npm run start\""
   },
   "dependencies": {
     "dotenv": "^16.4.5",
     "grammy": "^1.22.4"
   },
   "devDependencies": {
+    "@rollup/plugin-typescript": "^11.1.6",
+    "@types/dotenv": "^8.2.0",
     "@types/node": "^20.12.7",
-    "tsc-watch": "^6.2.0",
+    "concurrently": "^8.2.2",
+    "nodemon": "^3.1.0",
+    "rollup": "^4.17.0",
     "typescript": "^5.4.5"
+  },
+  "nodemonConfig": {
+    "watch": [
+      "dist"
+    ],
+    "ext": "js,json"
   }
 }

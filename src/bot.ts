@@ -46,24 +46,23 @@ bot.hears(['Вариант 1', 'Вариант 2', 'Вариант 3', 'Вари
         console.error('ctx.match должен быть строкой');
         return
     }
-
     quiz.isCorrect = parseInt(ctx.match.split(' ')[1]) - 1;
 
-    if (ctx.from?.id) {
-        const userId = ctx.from.id;
-        const state: IStateUsers = await loadState()
-        // Обновляем состояние для пользователя
-        if (!state[userId]) {
-            // Начальное состояние
-            state[userId] = { countQuiz: 0, correctAnswer: 0 };
-        }
-        // Увеличиваем счетчик quiz
-        state[userId].countQuiz += 1;
-        // Увеличиваем счетчик правильных ответов
-        state[userId].correctAnswer += +quiz._isCorrect
-        // Сохраняем обновленное состояние в файл
-        await saveState(state);
-    }
+    // if (ctx.from?.id) {
+    //     const userId = ctx.from.id;
+    //     const state: IStateUsers = await loadState()
+    //     // Обновляем состояние для пользователя
+    //     if (!state[userId]) {
+    //         // Начальное состояние
+    //         state[userId] = { countQuiz: 0, correctAnswer: 0 };
+    //     }
+    //     // Увеличиваем счетчик quiz
+    //     state[userId].countQuiz += 1;
+    //     // Увеличиваем счетчик правильных ответов
+    //     state[userId].correctAnswer += +quiz._isCorrect
+    //     // Сохраняем обновленное состояние в файл
+    //     await saveState(state);
+    // }
 
     // Отправка сообщения с правильностью ответа пользователем и пояснение ответа
     await ctx.reply(quiz.getIsCorrectAndExplanationHTML(), {

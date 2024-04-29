@@ -9,11 +9,22 @@
 - yarn init -y
 - tsc --init
 - git init
+
 - yarn add grammy
 - yarn add dotenv
+- yarn add -D @types/dotenv
 - yarn add -D typescript
 - yarn add -D tsc-watch
 - yarn add -D @types/node
+
+## branch feature/rollup
+- yarn add -D rollup 
+- yarn add -D @rollup/plugin-typescript
+- yarn add -D nodemon
+- yarn add -D concurrently
+- yarn add tslib
+- yarn add -D rollup-plugin-terser
+
 
 ## Branch
 - git branch develop
