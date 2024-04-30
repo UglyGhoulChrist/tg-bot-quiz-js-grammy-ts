@@ -1,7 +1,7 @@
 export interface IQuiz {
-    id: number
-    question: string
-    options: string[]
-    correct: number
-    explanation: string
+    readonly id: number
+    readonly question: string
+    readonly options: string[]
+    readonly correct: number
+    readonly explanation: string
 }

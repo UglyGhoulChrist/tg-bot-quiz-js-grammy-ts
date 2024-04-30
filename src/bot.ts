@@ -2,8 +2,6 @@
 import { config } from 'dotenv'
 config()
 
-import { loadState, saveState } from './state-users'
-
 // Подключение библиотеки `grammy`, для создания Telegram-ботов на Node.js
 import { Api, Bot, BotError, CommandContext, Context, GrammyError, HearsContext, HttpError, RawApi } from 'grammy'
 // Подключение команд
@@ -14,7 +12,8 @@ import { descriptionStart, descriptionHelp, descriptionBadMessage } from './cons
 import { Quiz } from './quiz.class'
 // Подключение клавиатур
 import { keyboardFirstQuiz, keyboardNextQuiz, keyboardOptions } from './keyboards'
-import { IStateUsers } from './state-users.interface';
+import { IUserState } from './userState.interface';
+import { UserState } from './userState.class';
 
 // Создание нового экземпляра бота, токен для которого берется из переменных окружения (`BOT_TOKEN`)
 const bot: Bot<Context, Api<RawApi>> = new Bot(process.env.BOT_TOKEN as string)
@@ -22,6 +21,8 @@ const bot: Bot<Context, Api<RawApi>> = new Bot(process.env.BOT_TOKEN as string)
 bot.api.setMyCommands(commands)
 // Получение вопроса
 let quiz: Quiz = new Quiz()
+
+const userState = new UserState();
 
 // Старт игры
 const startGame = async (ctx: Context): Promise<void> => {
@@ -40,38 +41,24 @@ bot.hears(['Первый вопрос', 'Следующий вопрос'], asyn
 })
 
 // Обработка нажатия на кнопки вариантов ответа
-bot.hears(['Вариант 1', 'Вариант 2', 'Вариант 3', 'Вариант 4'], async (ctx: HearsContext<Context>) => {
+bot.hears(/^Вариант (\d)$/, async (ctx) => {
 
-    if (typeof ctx.match !== 'string') {
-        console.error('ctx.match должен быть строкой');
-        return
+    const userId: number | undefined = ctx.from?.id;
+    if (!userId) return;
+
+    await userState.incrementQuizCount(userId);
+
+    const selectedOption: number = parseInt(ctx.match[1]);
+    if (quiz.correct === selectedOption - 1) {
+        quiz.isCorrect = true
+        await userState.incrementCorrectAnswer(userId);
     }
-    quiz.isCorrect = parseInt(ctx.match.split(' ')[1]) - 1;
-
-    // if (ctx.from?.id) {
-    //     const userId = ctx.from.id;
-    //     const state: IStateUsers = await loadState()
-    //     // Обновляем состояние для пользователя
-    //     if (!state[userId]) {
-    //         // Начальное состояние
-    //         state[userId] = { countQuiz: 0, correctAnswer: 0 };
-    //     }
-    //     // Увеличиваем счетчик quiz
-    //     state[userId].countQuiz += 1;
-    //     // Увеличиваем счетчик правильных ответов
-    //     state[userId].correctAnswer += +quiz._isCorrect
-    //     // Сохраняем обновленное состояние в файл
-    //     await saveState(state);
-    // }
 
     // Отправка сообщения с правильностью ответа пользователем и пояснение ответа
     await ctx.reply(quiz.getIsCorrectAndExplanationHTML(), {
         parse_mode: 'HTML',
         reply_markup: keyboardNextQuiz
     });
-
-    // Возврат функции после обработки нажатия на кнопку вариантов ответа
-    return;
 });
 
 // Обработка команды `/help`
@@ -96,9 +83,9 @@ bot.command('question', async (ctx: CommandContext<Context>) => {
 bot.command('progress', async (ctx: CommandContext<Context>) => {
     if (ctx.from?.id) {
         const userId: number = ctx.from.id;
-        const state: IStateUsers = await loadState()
-        if (state[userId]) {
-            await ctx.reply(`Вы ответили правильно на ${state[userId].correctAnswer} из ${state[userId].countQuiz} вопросов викторины!`)
+        const state: IUserState = userState.getUserState(userId)
+        if (state) {
+            await ctx.reply(`Вы ответили правильно на ${state.correctAnswer} из ${state.countQuiz} вопросов викторины!`)
         } else {
             await ctx.reply('Вы ещё не ответили ни на один вопрос викторины!')
         }
