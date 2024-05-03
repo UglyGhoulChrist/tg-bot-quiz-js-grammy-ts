@@ -11,4 +11,7 @@ export default {
         typescript(), // плагин для работы с TypeScript
     ],
     external: ['dotenv', 'grammy', 'node:fs/promises', 'node:path'],
+    watch: {
+        exclude: ['*.json', 'dist/**']
+    }
 }

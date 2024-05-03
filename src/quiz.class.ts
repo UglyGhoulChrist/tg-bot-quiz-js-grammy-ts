@@ -1,4 +1,5 @@
-import { listQuiz } from './list-quiz-dev'
+import { listQuiz } from './list-quiz'
+// import { listQuiz } from './list-quiz-dev'
 import { IQuiz } from './quiz.interface'
 
 export class Quiz implements IQuiz {
@@ -56,6 +57,6 @@ export class Quiz implements IQuiz {
     public getIsCorrectAndExplanationHTML(): string {
         return `<b>${this._isCorrect ? '✅ Вы ответили правильно!' : '🤮 Вы ответили не правильно!'}
 \nПояснение:</b>
-<span class='tg-spoiler'>${this.explanation}</span>`
+<tg-spoiler>${this.explanation}</tg-spoiler>`
     }
 }
