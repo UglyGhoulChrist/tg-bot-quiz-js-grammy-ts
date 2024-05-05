@@ -13,6 +13,10 @@ import { Quiz } from './quiz.class'
 // Подключение клавиатур
 import { keyboardFirstQuiz, keyboardNextQuiz, keyboardOptions } from './keyboards'
 import { IUserState } from './userState.interface';
+import { UserState } from './userState.class'
+
+const userState = new UserState();
+
 
 // Определение формы сессии
 interface SessionData {
@@ -58,21 +62,36 @@ bot.hears(['Первый вопрос', 'Следующий вопрос'], asyn
 // Обработка нажатия на кнопки вариантов ответа
 bot.hears(/^Вариант (\d)$/, async (ctx) => {
 
+    const userId = ctx.from?.id;
+    if (!userId) {
+        await ctx.reply('Не удалось идентифицировать пользователя.');
+        return;
+    }
+
     if (!ctx.session.quiz) {
         await ctx.reply('Сначала начните игру командой /question.');
         return;
     }
 
+    // Увеличение количества пройденных вопросов
+    await userState.incrementQuizCount(userId);
+
     const selectedOption: number = parseInt(ctx.match[1]);
     ctx.session.quiz.isCorrect = ctx.session.quiz.correct === selectedOption - 1;
+
+    const isCorrect = ctx.session.quiz.correct === selectedOption - 1;
+
+    if (isCorrect) {
+        // Увеличение количества правильных ответов
+        await userState.incrementCorrectAnswer(userId);
+    }
+
 
     await ctx.reply(ctx.session.quiz.getIsCorrectAndExplanationHTML(), {
         parse_mode: 'HTML',
         reply_markup: keyboardNextQuiz
     });
 });
-
-
 
 // Обработка команды `/help`
 bot.command('help', async (ctx: CommandContext<MyContext>) => {
@@ -93,8 +112,24 @@ bot.command('question', async (ctx: CommandContext<MyContext>) => {
 })
 
 // Обработка команды /progress
+// bot.command('progress', async (ctx) => {
+//     const state: IUserState = ctx.session.userState;
+//     await ctx.reply(`Вы ответили правильно на ${state.correctAnswer} из ${state.countQuiz} вопросов викторины!`);
+// });
+
+
+// Обработка команды /progress
 bot.command('progress', async (ctx) => {
-    const state: IUserState = ctx.session.userState;
+    const userId = ctx.from?.id;
+    if (!userId) {
+        await ctx.reply('Не удалось идентифицировать пользователя.');
+        return;
+    }
+
+    // Загрузка состояния пользователя из файла
+    const state = await userState.getUserState(userId);
+
+    // Отправка сообщения с текущим прогрессом пользователя
     await ctx.reply(`Вы ответили правильно на ${state.correctAnswer} из ${state.countQuiz} вопросов викторины!`);
 });
 

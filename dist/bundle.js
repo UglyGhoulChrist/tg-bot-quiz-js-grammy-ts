@@ -1,5 +1,7 @@
 import { config } from 'dotenv';
 import { Keyboard, Bot, session, GrammyError, HttpError } from 'grammy';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 const commands = [
     { command: 'help', description: 'Помощь' },
@@ -2829,8 +2831,8 @@ class Quiz {
 Вариант 4: ${this.options[3]}`;
     }
     getIsCorrectAndExplanationHTML() {
-        return `<u>id: ${this.id}</u>  <b>${this._isCorrect ? '✅ Вы ответили правильно!' : `🤮 Вы ответили не правильно!</b>
-\n<b>Правильный ответ:</b> ${this.options[this.correct]}`}
+        return `<u>id: ${this.id}</u>  ${this._isCorrect ? '<b>✅ Вы ответили правильно!</b>' : `<b>🤮 Вы ответили не правильно!
+\nПравильный ответ:</b> ${this.options[this.correct]}`}
 \n<b>Пояснение:</b>
 <tg-spoiler>${this.explanation}</tg-spoiler>`;
     }
@@ -2840,7 +2842,61 @@ const keyboardFirstQuiz = new Keyboard().text('Первый вопрос').resiz
 const keyboardNextQuiz = new Keyboard().text('Следующий вопрос').resized();
 const keyboardOptions = new Keyboard().text('Вариант 1').text('Вариант 2').text('Вариант 3').text('Вариант 4').resized();
 
+class UserState {
+    state = {};
+    stateFilePath = path.join('dist', 'state-users.json');
+    constructor() {
+        this.initState();
+    }
+    async initState() {
+        await this.ensureFileExists();
+        await this.loadState();
+    }
+    async ensureFileExists() {
+        try {
+            await fs.access(this.stateFilePath);
+        }
+        catch {
+            const dir = path.dirname(this.stateFilePath);
+            await fs.mkdir(dir, { recursive: true });
+            await fs.writeFile(this.stateFilePath, '{}', 'utf8');
+        }
+    }
+    async loadState() {
+        try {
+            const data = await fs.readFile(this.stateFilePath, 'utf8');
+            this.state = JSON.parse(data);
+        }
+        catch (error) {
+            this.state = {};
+        }
+    }
+    async saveState() {
+        const data = JSON.stringify(this.state, null, 2);
+        await fs.writeFile(this.stateFilePath, data, 'utf8');
+    }
+    async getUserState(userId) {
+        return this.state[userId] || { countQuiz: 0, correctAnswer: 0 };
+    }
+    async checkOrCreateUserState(userId) {
+        if (!this.state[userId]) {
+            this.state[userId] = { countQuiz: 0, correctAnswer: 0 };
+        }
+    }
+    async incrementQuizCount(userId) {
+        await this.checkOrCreateUserState(userId);
+        this.state[userId].countQuiz += 1;
+        await this.saveState();
+    }
+    async incrementCorrectAnswer(userId) {
+        await this.checkOrCreateUserState(userId);
+        this.state[userId].correctAnswer += 1;
+        await this.saveState();
+    }
+}
+
 config();
+const userState = new UserState();
 const bot = new Bot(process.env.BOT_TOKEN);
 bot.api.setMyCommands(commands);
 function initial() {
@@ -2858,12 +2914,22 @@ bot.hears(['Первый вопрос', 'Следующий вопрос'], asyn
     startGame(ctx);
 });
 bot.hears(/^Вариант (\d)$/, async (ctx) => {
+    const userId = ctx.from?.id;
+    if (!userId) {
+        await ctx.reply('Не удалось идентифицировать пользователя.');
+        return;
+    }
     if (!ctx.session.quiz) {
         await ctx.reply('Сначала начните игру командой /question.');
         return;
     }
+    await userState.incrementQuizCount(userId);
     const selectedOption = parseInt(ctx.match[1]);
     ctx.session.quiz.isCorrect = ctx.session.quiz.correct === selectedOption - 1;
+    const isCorrect = ctx.session.quiz.correct === selectedOption - 1;
+    if (isCorrect) {
+        await userState.incrementCorrectAnswer(userId);
+    }
     await ctx.reply(ctx.session.quiz.getIsCorrectAndExplanationHTML(), {
         parse_mode: 'HTML',
         reply_markup: keyboardNextQuiz
@@ -2882,7 +2948,12 @@ bot.command('question', async (ctx) => {
     await startGame(ctx);
 });
 bot.command('progress', async (ctx) => {
-    const state = ctx.session.userState;
+    const userId = ctx.from?.id;
+    if (!userId) {
+        await ctx.reply('Не удалось идентифицировать пользователя.');
+        return;
+    }
+    const state = await userState.getUserState(userId);
     await ctx.reply(`Вы ответили правильно на ${state.correctAnswer} из ${state.countQuiz} вопросов викторины!`);
 });
 bot.on('message', async (ctx) => {

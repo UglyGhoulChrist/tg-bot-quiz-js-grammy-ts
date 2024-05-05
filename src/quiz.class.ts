@@ -57,8 +57,8 @@ export class Quiz implements IQuiz {
     // Получение HTML правильности ответа пользователя и пояснение вопроса
     //! ToDo удалить id 
     public getIsCorrectAndExplanationHTML(): string {
-        return `<u>id: ${this.id}</u>  <b>${this._isCorrect ? '✅ Вы ответили правильно!' : `🤮 Вы ответили не правильно!</b>
-\n<b>Правильный ответ:</b> ${this.options[this.correct]}`}
+        return `<u>id: ${this.id}</u>  ${this._isCorrect ? '<b>✅ Вы ответили правильно!</b>' : `<b>🤮 Вы ответили не правильно!
+\nПравильный ответ:</b> ${this.options[this.correct]}`}
 \n<b>Пояснение:</b>
 <tg-spoiler>${this.explanation}</tg-spoiler>`
     }

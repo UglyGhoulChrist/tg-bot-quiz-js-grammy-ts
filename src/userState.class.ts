@@ -40,7 +40,7 @@ export class UserState {
         await fs.writeFile(this.stateFilePath, data, 'utf8');
     }
 
-    public getUserState(userId: number): IUserState {
+    public async getUserState(userId: number): Promise<IUserState> {
         return this.state[userId] || { countQuiz: 0, correctAnswer: 0 };
     }
 
