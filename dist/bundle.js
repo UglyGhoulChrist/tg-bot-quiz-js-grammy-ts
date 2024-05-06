@@ -1,5 +1,5 @@
 import { config } from 'dotenv';
-import { Keyboard, Bot, session, GrammyError, HttpError } from 'grammy';
+import { Keyboard, GrammyError, HttpError, Bot, session } from 'grammy';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -13,6 +13,104 @@ const commands = [
 const descriptionHelp = 'Бот задает вопросы по JavaScript. Для каждого вопроса доступно четыре варианта ответа, один из которых является верным. После выбора ответа бот предоставит объяснение к вопросу и сообщит, правильно ли был выбран ответ.';
 const descriptionStart = 'Привет! Я <b>QuizJS</b> - викторина по JavaScript - что будет выведено в консоль?';
 const descriptionBadMessage = 'Я пока только умею задавать вопросы. Воспользуйтесь командами или кнопками на клавиатуре.';
+
+async function handleHelpCommand(ctx) {
+    try {
+        await ctx.reply(descriptionHelp, { parse_mode: 'HTML' });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.log(error.message);
+        }
+        else {
+            console.log('Произошла неизвестная ошибка');
+        }
+    }
+}
+
+const keyboardFirstQuiz = new Keyboard().text('Первый вопрос').resized();
+const keyboardNextQuiz = new Keyboard().text('Следующий вопрос').resized();
+const keyboardOptions = new Keyboard().text('Вариант 1').text('Вариант 2').text('Вариант 3').text('Вариант 4').resized();
+
+async function handleStartCommand(ctx) {
+    try {
+        await ctx.reply(descriptionStart, {
+            parse_mode: 'HTML',
+            reply_markup: keyboardFirstQuiz
+        });
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            console.log(error.message);
+        }
+        else {
+            console.log('Произошла неизвестная ошибка');
+        }
+    }
+}
+
+async function handleBotError(err) {
+    const ctx = err.ctx;
+    console.error(`Ошибка при обработке обновления ${ctx.update.update_id}:`);
+    const e = err.error;
+    if (e instanceof GrammyError) {
+        console.error('Ошибка в запросе:', e.description);
+    }
+    else if (e instanceof HttpError) {
+        console.error('Не удалось связаться с Telegram:', e);
+    }
+    else {
+        console.error('Неизвестная ошибка:', e);
+    }
+}
+
+async function getUserId(ctx) {
+    const userId = ctx.from?.id;
+    if (!userId) {
+        await ctx.reply('Не удалось идентифицировать пользователя.');
+    }
+    return userId;
+}
+
+async function handleProgressCommand(ctx) {
+    const userId = await getUserId(ctx);
+    if (userId) {
+        const state = await userState.getUserState(userId);
+        try {
+            await ctx.reply(`Вы ответили правильно на ${state.correctAnswer} из ${state.countQuiz} вопросов викторины!`);
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.log(error.message);
+            }
+            else {
+                console.log('Произошла неизвестная ошибка');
+            }
+        }
+    }
+}
+
+async function handleAnswerButtonClick(ctx) {
+    const userId = await getUserId(ctx);
+    if (!userId) {
+        return;
+    }
+    if (!ctx.session.quiz) {
+        await ctx.reply('Сначала начните игру командой /question.');
+        return;
+    }
+    await userState.incrementQuizCount(userId);
+    const selectedOption = parseInt(ctx.match[1]);
+    const isCorrect = ctx.session.quiz.correct === selectedOption - 1;
+    ctx.session.quiz.isCorrect = isCorrect;
+    if (isCorrect) {
+        await userState.incrementCorrectAnswer(userId);
+    }
+    await ctx.reply(ctx.session.quiz.getIsCorrectAndExplanationHTML(), {
+        parse_mode: 'HTML',
+        reply_markup: keyboardNextQuiz
+    });
+}
 
 const listQuiz = [
     {
@@ -2838,9 +2936,17 @@ class Quiz {
     }
 }
 
-const keyboardFirstQuiz = new Keyboard().text('Первый вопрос').resized();
-const keyboardNextQuiz = new Keyboard().text('Следующий вопрос').resized();
-const keyboardOptions = new Keyboard().text('Вариант 1').text('Вариант 2').text('Вариант 3').text('Вариант 4').resized();
+async function startGame(ctx) {
+    ctx.session.quiz = new Quiz();
+    await ctx.reply(ctx.session.quiz.getQuestionAndOptionsHTML(), {
+        parse_mode: 'HTML',
+        reply_markup: keyboardOptions
+    });
+}
+
+function initial() {
+    return { quiz: new Quiz(), userState: { countQuiz: 0, correctAnswer: 0 } };
+}
 
 class UserState {
     state = {};
@@ -2896,81 +3002,20 @@ class UserState {
 }
 
 config();
-const userState = new UserState();
 const bot = new Bot(process.env.BOT_TOKEN);
 bot.api.setMyCommands(commands);
-function initial() {
-    return { quiz: new Quiz(), userState: { countQuiz: 0, correctAnswer: 0 } };
-}
 bot.use(session({ initial }));
-const startGame = async (ctx) => {
-    ctx.session.quiz = new Quiz();
-    await ctx.reply(ctx.session.quiz.getQuestionAndOptionsHTML(), {
-        parse_mode: 'HTML',
-        reply_markup: keyboardOptions
-    });
-};
-bot.hears(['Первый вопрос', 'Следующий вопрос'], async (ctx) => {
-    startGame(ctx);
-});
-bot.hears(/^Вариант (\d)$/, async (ctx) => {
-    const userId = ctx.from?.id;
-    if (!userId) {
-        await ctx.reply('Не удалось идентифицировать пользователя.');
-        return;
-    }
-    if (!ctx.session.quiz) {
-        await ctx.reply('Сначала начните игру командой /question.');
-        return;
-    }
-    await userState.incrementQuizCount(userId);
-    const selectedOption = parseInt(ctx.match[1]);
-    ctx.session.quiz.isCorrect = ctx.session.quiz.correct === selectedOption - 1;
-    const isCorrect = ctx.session.quiz.correct === selectedOption - 1;
-    if (isCorrect) {
-        await userState.incrementCorrectAnswer(userId);
-    }
-    await ctx.reply(ctx.session.quiz.getIsCorrectAndExplanationHTML(), {
-        parse_mode: 'HTML',
-        reply_markup: keyboardNextQuiz
-    });
-});
-bot.command('help', async (ctx) => {
-    await ctx.reply(descriptionHelp, { parse_mode: 'HTML' });
-});
-bot.command('start', async (ctx) => {
-    await ctx.reply(descriptionStart, {
-        parse_mode: 'HTML',
-        reply_markup: keyboardFirstQuiz
-    });
-});
-bot.command('question', async (ctx) => {
-    await startGame(ctx);
-});
-bot.command('progress', async (ctx) => {
-    const userId = ctx.from?.id;
-    if (!userId) {
-        await ctx.reply('Не удалось идентифицировать пользователя.');
-        return;
-    }
-    const state = await userState.getUserState(userId);
-    await ctx.reply(`Вы ответили правильно на ${state.correctAnswer} из ${state.countQuiz} вопросов викторины!`);
-});
+const userState = new UserState();
+bot.hears(/.*вопрос$/i, startGame);
+bot.hears(/^Вариант (\d)$/i, handleAnswerButtonClick);
+bot.command('help', handleHelpCommand);
+bot.command('start', handleStartCommand);
+bot.command('question', startGame);
+bot.command('progress', handleProgressCommand);
 bot.on('message', async (ctx) => {
     await ctx.reply(descriptionBadMessage);
 });
-bot.catch((err) => {
-    const ctx = err.ctx;
-    console.error(`Ошибка при обработке обновления ${ctx.update.update_id}:`);
-    const e = err.error;
-    if (e instanceof GrammyError) {
-        console.error('Ошибка в запросе:', e.description);
-    }
-    else if (e instanceof HttpError) {
-        console.error('Не удалось связаться с Telegram:', e);
-    }
-    else {
-        console.error('Неизвестная ошибка:', e);
-    }
-});
+bot.catch(handleBotError);
 bot.start();
+
+export { userState };
