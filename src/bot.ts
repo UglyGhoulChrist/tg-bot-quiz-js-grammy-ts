@@ -5,7 +5,7 @@ config()
 // Подключение библиотеки `grammy`, для создания Telegram-ботов на Node.js
 import { Api, Bot, Context, session, SessionFlavor, RawApi } from 'grammy'
 // Подключение команд
-import { commands } from './commands'
+import { commands } from './commands/commands'
 // Подключение констант с текстом
 import { descriptionBadMessage } from './constants'
 import { handleHelpCommand } from './handlers/handleHelpCommand'
@@ -13,10 +13,9 @@ import { handleStartCommand } from './handlers/handleStartCommand'
 import { handleBotError } from './handlers/handleBotError'
 import { handleProgressCommand } from './handlers/handleProgressCommand'
 import { handleAnswerButtonClick } from './handlers/handleAnswerButtonClick'
-import { startGame } from './function/startGame'
-import { initial } from './function/initial'
-import { ISessionData } from './sessionData.interface'
-import { UserState } from './userState.class'
+import { startGame } from './quiz/startGame'
+import { initial } from './session/initial'
+import { ISessionData } from './session/sessionData.interface'
 
 // Расширение типа контекста для включения сессий
 export type MyContext = Context & SessionFlavor<ISessionData>;
@@ -29,8 +28,6 @@ bot.api.setMyCommands(commands)
 
 // Использование промежуточного обработчика сессии
 bot.use(session({ initial }));
-
-export const userState = new UserState();
 
 // Обработка нажатия на кнопки `Первый вопрос` или `Следующий вопрос`
 bot.hears(/.*вопрос$/i, startGame)

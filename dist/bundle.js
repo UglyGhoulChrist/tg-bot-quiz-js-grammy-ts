@@ -72,12 +72,59 @@ async function getUserId(ctx) {
     return userId;
 }
 
+class UserState {
+    stateDirPath = path.join('state');
+    constructor() {
+        this.initStateDir();
+    }
+    async initStateDir() {
+        try {
+            await fs.access(this.stateDirPath);
+        }
+        catch {
+            await fs.mkdir(this.stateDirPath, { recursive: true });
+        }
+    }
+    async getUserFilePath(userId) {
+        return path.join(this.stateDirPath, `${userId}.json`);
+    }
+    async ensureFileExists(filePath) {
+        try {
+            await fs.access(filePath);
+        }
+        catch {
+            await fs.writeFile(filePath, JSON.stringify({ countQuiz: 0, correctAnswer: 0 }), 'utf8');
+        }
+    }
+    async getUserState(userId) {
+        const filePath = await this.getUserFilePath(userId);
+        await this.ensureFileExists(filePath);
+        const data = await fs.readFile(filePath, 'utf8');
+        return JSON.parse(data);
+    }
+    async saveUserState(userId, userState) {
+        const filePath = await this.getUserFilePath(userId);
+        const data = JSON.stringify(userState, null, 2);
+        await fs.writeFile(filePath, data, 'utf8');
+    }
+    async incrementQuizCount(userId) {
+        const userState = await this.getUserState(userId);
+        userState.countQuiz += 1;
+        await this.saveUserState(userId, userState);
+    }
+    async incrementCorrectAnswer(userId) {
+        const userState = await this.getUserState(userId);
+        userState.correctAnswer += 1;
+        await this.saveUserState(userId, userState);
+    }
+}
+
 async function handleProgressCommand(ctx) {
     const userId = await getUserId(ctx);
     if (userId) {
-        const state = await userState.getUserState(userId);
+        const userState = await new UserState().getUserState(userId);
         try {
-            await ctx.reply(`Вы ответили правильно на ${state.correctAnswer} из ${state.countQuiz} вопросов викторины!`);
+            await ctx.reply(`Вы ответили правильно на ${userState.correctAnswer} из ${userState.countQuiz} вопросов викторины!`);
         }
         catch (error) {
             if (error instanceof Error) {
@@ -99,6 +146,7 @@ async function handleAnswerButtonClick(ctx) {
         await ctx.reply('Сначала начните игру командой /question.');
         return;
     }
+    const userState = new UserState();
     await userState.incrementQuizCount(userId);
     const selectedOption = parseInt(ctx.match[1]);
     const isCorrect = ctx.session.quiz.correct === selectedOption - 1;
@@ -2945,67 +2993,13 @@ async function startGame(ctx) {
 }
 
 function initial() {
-    return { quiz: new Quiz(), userState: { countQuiz: 0, correctAnswer: 0 } };
-}
-
-class UserState {
-    state = {};
-    stateFilePath = path.join('dist', 'state-users.json');
-    constructor() {
-        this.initState();
-    }
-    async initState() {
-        await this.ensureFileExists();
-        await this.loadState();
-    }
-    async ensureFileExists() {
-        try {
-            await fs.access(this.stateFilePath);
-        }
-        catch {
-            const dir = path.dirname(this.stateFilePath);
-            await fs.mkdir(dir, { recursive: true });
-            await fs.writeFile(this.stateFilePath, '{}', 'utf8');
-        }
-    }
-    async loadState() {
-        try {
-            const data = await fs.readFile(this.stateFilePath, 'utf8');
-            this.state = JSON.parse(data);
-        }
-        catch (error) {
-            this.state = {};
-        }
-    }
-    async saveState() {
-        const data = JSON.stringify(this.state, null, 2);
-        await fs.writeFile(this.stateFilePath, data, 'utf8');
-    }
-    async getUserState(userId) {
-        return this.state[userId] || { countQuiz: 0, correctAnswer: 0 };
-    }
-    async checkOrCreateUserState(userId) {
-        if (!this.state[userId]) {
-            this.state[userId] = { countQuiz: 0, correctAnswer: 0 };
-        }
-    }
-    async incrementQuizCount(userId) {
-        await this.checkOrCreateUserState(userId);
-        this.state[userId].countQuiz += 1;
-        await this.saveState();
-    }
-    async incrementCorrectAnswer(userId) {
-        await this.checkOrCreateUserState(userId);
-        this.state[userId].correctAnswer += 1;
-        await this.saveState();
-    }
+    return { quiz: new Quiz() };
 }
 
 config();
 const bot = new Bot(process.env.BOT_TOKEN);
 bot.api.setMyCommands(commands);
 bot.use(session({ initial }));
-const userState = new UserState();
 bot.hears(/.*вопрос$/i, startGame);
 bot.hears(/^Вариант (\d)$/i, handleAnswerButtonClick);
 bot.command('help', handleHelpCommand);
@@ -3017,5 +3011,3 @@ bot.on('message', async (ctx) => {
 });
 bot.catch(handleBotError);
 bot.start();
-
-export { userState };

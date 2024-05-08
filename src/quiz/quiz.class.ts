@@ -1,5 +1,4 @@
 import { listQuiz } from './list-quiz'
-// import { listQuiz } from './list-quiz-dev'
 import { IQuiz } from './quiz.interface'
 
 export class Quiz implements IQuiz {

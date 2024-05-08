@@ -1,6 +1,6 @@
 import { MyContext } from "../bot";
 import { keyboardOptions } from "../keyboards";
-import { Quiz } from "../quiz.class";
+import { Quiz } from "./quiz.class";
 
 // Старт игры
 export async function startGame(ctx: MyContext): Promise<void> {

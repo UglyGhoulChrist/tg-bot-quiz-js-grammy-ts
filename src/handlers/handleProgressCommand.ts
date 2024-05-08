@@ -1,7 +1,8 @@
 import { CommandContext } from "grammy";
-import { MyContext, userState } from "../bot";
-import { IUserState } from "../userState.interface";
-import { getUserId } from "../function/getUserId";
+import { MyContext } from "../bot";
+import { IUserState } from "../userState/userState.interface";
+import { getUserId } from "../userState/getUserId";
+import { UserState } from "../userState/userState.class";
 
 export async function handleProgressCommand(ctx: CommandContext<MyContext>): Promise<void> {
 
@@ -9,12 +10,11 @@ export async function handleProgressCommand(ctx: CommandContext<MyContext>): Pro
 
     if (userId) {
         // Загрузка состояния пользователя из файла
-
-        const state: IUserState = await userState.getUserState(userId);
+        const userState: IUserState = await new UserState().getUserState(userId);
 
         try {
             // Отправка сообщения с текущим прогрессом пользователя
-            await ctx.reply(`Вы ответили правильно на ${state.correctAnswer} из ${state.countQuiz} вопросов викторины!`);
+            await ctx.reply(`Вы ответили правильно на ${userState.correctAnswer} из ${userState.countQuiz} вопросов викторины!`);
         } catch (error) {
             if (error instanceof Error) {
                 console.log(error.message);

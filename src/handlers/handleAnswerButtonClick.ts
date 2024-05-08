@@ -1,7 +1,8 @@
 import { HearsContext } from "grammy";
-import { MyContext, userState } from "../bot";
+import { MyContext } from "../bot";
 import { keyboardNextQuiz } from "../keyboards";
-import { getUserId } from "../function/getUserId";
+import { getUserId } from "../userState/getUserId";
+import { UserState } from "../userState/userState.class";
 
 export async function handleAnswerButtonClick(ctx: HearsContext<MyContext>): Promise<void> {
     const userId: number | undefined = await getUserId(ctx);
@@ -13,6 +14,9 @@ export async function handleAnswerButtonClick(ctx: HearsContext<MyContext>): Pro
         await ctx.reply('Сначала начните игру командой /question.');
         return;
     }
+
+    // Загрузка состояния пользователя из файла
+    const userState: UserState = new UserState()
 
     // Увеличение количества пройденных вопросов
     await userState.incrementQuizCount(userId);

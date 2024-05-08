@@ -12,6 +12,6 @@ export default {
     ],
     external: ['dotenv', 'grammy', 'node:fs/promises', 'node:path'],
     watch: {
-        exclude: ['*.json', 'dist/**']
+        exclude: ['*.json', 'dist/**', 'state/**']
     }
 }
