@@ -2,15 +2,15 @@ import { MyContext } from "../bot";
 import { keyboardOptions } from "../keyboards";
 import { Quiz } from "./quiz.class";
 
-// Старт игры
+// Начинаю новую викторину для пользователя.
 export async function startGame(ctx: MyContext): Promise<void> {
 
-    // Получение вопроса
+    // Создаю новый экземпляр викторины и сохраняю его в сессии пользователя.
     ctx.session.quiz = new Quiz();
 
-    // Отправка сообщения с текстом вопроса, вариантами ответа и клавиатурой с кнопками выбора ответа
+    // Отправляю пользователю сообщение с текстом вопроса и вариантами ответа.
     await ctx.reply(ctx.session.quiz.getQuestionAndOptionsHTML(), {
         parse_mode: 'HTML',
         reply_markup: keyboardOptions
-    })
-}
+    });
+};

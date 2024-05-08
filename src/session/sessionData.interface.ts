@@ -1,6 +1,6 @@
 import { Quiz } from "../quiz/quiz.class";
 
-// Определение формы сессии
+// Описываю интерфейс для данных сессии.
 export interface ISessionData {
     quiz: Quiz;
 }

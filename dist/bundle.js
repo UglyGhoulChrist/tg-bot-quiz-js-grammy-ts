@@ -28,9 +28,18 @@ async function handleHelpCommand(ctx) {
     }
 }
 
-const keyboardFirstQuiz = new Keyboard().text('Первый вопрос').resized();
-const keyboardNextQuiz = new Keyboard().text('Следующий вопрос').resized();
-const keyboardOptions = new Keyboard().text('Вариант 1').text('Вариант 2').text('Вариант 3').text('Вариант 4').resized();
+const keyboardFirstQuiz = new Keyboard()
+    .text('Первый вопрос')
+    .resized();
+const keyboardNextQuiz = new Keyboard()
+    .text('Следующий вопрос')
+    .resized();
+const keyboardOptions = new Keyboard()
+    .text('Вариант 1')
+    .text('Вариант 2')
+    .text('Вариант 3')
+    .text('Вариант 4')
+    .resized();
 
 async function handleStartCommand(ctx) {
     try {
@@ -2961,13 +2970,16 @@ class Quiz {
         this.correct = randomQuestion.correct;
         this.explanation = randomQuestion.explanation;
     }
+    ;
     getRandomQuestion() {
         const randomIndex = Math.floor(Math.random() * listQuiz.length);
         return listQuiz[randomIndex];
     }
+    ;
     set isCorrect(value) {
         this._isCorrect = value;
     }
+    ;
     getQuestionAndOptionsHTML() {
         return `<u>id: ${this.id}</u>  <b>Что будет выведено в консоль?</b>\n
 <pre>${this.question}</pre>\n\n<b>Варианты ответа:</b>
@@ -2976,12 +2988,14 @@ class Quiz {
 Вариант 3: ${this.options[2]}
 Вариант 4: ${this.options[3]}`;
     }
+    ;
     getIsCorrectAndExplanationHTML() {
         return `<u>id: ${this.id}</u>  ${this._isCorrect ? '<b>✅ Вы ответили правильно!</b>' : `<b>🤮 Вы ответили не правильно!
 \nПравильный ответ:</b> ${this.options[this.correct]}`}
 \n<b>Пояснение:</b>
 <tg-spoiler>${this.explanation}</tg-spoiler>`;
     }
+    ;
 }
 
 async function startGame(ctx) {

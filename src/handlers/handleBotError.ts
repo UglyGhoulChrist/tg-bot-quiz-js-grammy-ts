@@ -1,6 +1,7 @@
 import { BotError, GrammyError, HttpError } from "grammy";
 import { MyContext } from "../bot";
 
+// Функция обрабатывает глобальные ошибки.
 export async function handleBotError(err: BotError<MyContext>): Promise<void> {
     const ctx: MyContext = err.ctx
     console.error(`Ошибка при обработке обновления ${ctx.update.update_id}:`)

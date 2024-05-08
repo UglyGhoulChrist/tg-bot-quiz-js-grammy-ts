@@ -25,28 +25,39 @@
 - yarn add tslib
 - yarn add -D rollup-plugin-terser
 
-
-## Branch
-- git branch develop
-- git checkout develop 
-- git branch feature/first-version
-- git checkout feature/first-version 
+## Branch and Tag
+- develop
+- feature/first-version
+- feature/rollup 
+- v1.0.0
+- hotfix/session
+- v1.0.1
+- hotfix/refactoring
+- v1.0.2
 
 ## Структура проекта
 
-- bot - [команды для использования в приложении](./src/bot.md)
-- commands - [команды для использования в приложении](./src/commands.md)
-- constants - константы используемые в коде
-- keyboards - клавиатуры используемые в коде
-- state-users - [управление состоянием пользователей](./src/state-users.md)
-- quiz-class - [класс викторины с вопросами по JavaScript](./src/quiz.md)
-
-## Если ООП, то структура проекта:
-
-1. BotController - класс для управления основными командами бота.
-2. MessageHandler - класс для обработки входящих сообщений и команд.
-3. Command - базовый класс или интерфейс для команд, от которого наследуются все конкретные команды.
-4. SessionManager - класс для управления сессиями пользователей.
-5. state-user - представление пользователей и его данных.
-6. DatabaseAdapter - класс для абстрагирования работы с базой данных.
-7. Service - классы для бизнес-логики, не связанной напрямую с телеграм-ботом.
+- bot.ts
+- constants.ts - константы используемые в коде
+- keyboards.ts - клавиатуры используемые в коде
+- userState - состояние пользователей
+    - getUserId.ts - функция проверки идентификации пользователя
+    - userState.class.ts - класс для управления состоянием пользователя
+    - userState.interface.ts - интерфейс для хранения состояния викторины конкретного пользователя
+- session - временное хранение игрового процесса
+    - initial.ts - функция инициализации начального состояния сессии каждого пользователя
+    - sessionData.interface.ts - интерфейс для данных сессии
+- quiz - викторина
+    - startGame.ts - старт викторины
+    - quiz.interface.ts - интерфейс для объекта викторины
+    - quiz.class.ts - класс викторины
+    - list-quiz.ts - массив с викторинами
+- handlers - обработчики
+    - handleHelpCommand - обработчик команды help
+    - handleStartCommand - обработчик команды start
+    - handleAnswerButtonClick - обработчик выбора варианта ответа
+    - handleProgressCommand - обработчик команды progress
+    - handleBotError - глобальный обработчик ошибок
+- commands - команды
+    - commands.interface.ts - интерфейс для команд
+    - commands.ts - список команд

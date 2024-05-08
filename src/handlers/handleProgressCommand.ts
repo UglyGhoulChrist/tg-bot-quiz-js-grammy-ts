@@ -4,6 +4,7 @@ import { IUserState } from "../userState/userState.interface";
 import { getUserId } from "../userState/getUserId";
 import { UserState } from "../userState/userState.class";
 
+// Функция обрабатывает команду /progress.
 export async function handleProgressCommand(ctx: CommandContext<MyContext>): Promise<void> {
 
     const userId: number | undefined = await getUserId(ctx);
