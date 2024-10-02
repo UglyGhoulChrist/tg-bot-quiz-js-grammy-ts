@@ -1,13 +1,13 @@
 {
   "name": "tg-bot-quiz-js-grammy-ts",
   "version": "1.0.0",
-  "main": "bundle.js",
+  "main": "quizjs.js",
   "license": "MIT",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c -w",
-    "start": "nodemon dist/bundle.js",
+    "start": "nodemon dist/quizjs.js",
     "dev": "concurrently \"npm run watch\" \"npm run start\""
   },
   "dependencies": {

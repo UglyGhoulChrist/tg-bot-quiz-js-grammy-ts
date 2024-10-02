@@ -4,7 +4,7 @@ export default {
     input: 'src/bot.ts', // ваша точка входа
     output: {
         // dir: 'dist', // папка для вывода бандла
-        file: 'dist/bundle.js',
+        file: 'dist/quizjs.js',
         format: 'es', // формат модуля (cjs для Node.js)
     },
     plugins: [
